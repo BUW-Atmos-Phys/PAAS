@@ -1,9 +1,10 @@
-function [b_abs,b_abs_highres,time,time_highres,laser_wavelength] = calculate_b_abs(paas,valve_functionality,corr_method)
+function [b_abs,b_abs_highres,time,TimeStart,TimeEnd,time_highres,laser_wavelength] = calculate_b_abs(paas,valve_functionality,corr_method)
 %calculate_b_abs Calculates absorption coefficients from imported PAAS data
 % Background subtraction included
-%   input:   paas   imported paas data
-%   valve_functionality: status of relay 1 and 2 for BG and sample
-%   measurement
+%   input                 
+%       paas:                   imported paas data
+%       valve_functionality:    status of relay 1 and 2 for BG and sample
+%       corr_method:            method to calculate b_abs
 %   For KIT PAAS: valve_functionality = [-1 0; 0 -1];
 
 % Number of lasers and first laser
@@ -26,6 +27,10 @@ end
 
 % Calculate f
 f = paas.Calibration_Gain(1) / paas.Lockin_Gain(1);
+
+% Correct laser power
+paas.X = paas.X ./ paas.Power;
+paas.Y = paas.Y ./ paas.Power;
 
 % Calculate BG
 X_bg_temp = [];
@@ -124,7 +129,7 @@ end
 
 if corr_method == 1
     % Calculate b_abs using R given by the LockIn
-    b_abs = ((R - R_bg) .* f) ./ (P .* paas.Calbration_CellConstant(1)); % in 1/m
+    b_abs = ((R - R_bg) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
     
     % High resolution data
     temp = NaN.* R_highres;
@@ -134,20 +139,43 @@ if corr_method == 1
         r = r - R_bg(i,:); % remove average background
         temp(i,:) = r(:)';
     end
-    b_abs_highres = (temp .* f) ./ (P_highres .* paas.Calbration_CellConstant(1)); % in 1/m
+    b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
 
 elseif corr_method == 2
     % Calculate b_abs using R calculated from X and Y
     R_bg = sqrt((X_bg).^2 + (Y_bg).^2); % in V
     Rc = sqrt((X).^2 + (Y).^2); % in V
-    b_abs = ((Rc./P - R_bg./P_bg) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    b_abs = ((Rc - R_bg) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
     
     % High resolution data
     Rc_highres = sqrt((X_highres).^2 + (Y_highres).^2); % in V
     for i = 1:number_of_lasers
-        r = Rc_highres(i,:)./P_highres(i,:);
+        r = Rc_highres(i,:);
         r = reshape(r(1:n*floor(size(R_highres,2)./n)),n,floor(length(index)./n));
-        r = r - R_bg(i,:)./P_bg(i,:); % remove average background
+        r = r - R_bg(i,:); % remove average background
+        temp(i,:) = r(:)';
+    end
+    b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+
+elseif corr_method == 3
+    % Calculate b_abs using projected R  
+    S           = (X + 1i*Y);        % X,Y aktuelle Messung;
+    S_highres   = X_highres  + 1i*Y_highres;     
+    W0          = (X_bg + 1i*Y_bg); % Xw,Yw aus Leer-Kalibrierung (W0)
+
+    %  Background-corrected signal
+    S_corr = S - W0;
+    phi_diff = angle(S) - angle(W0);
+    Rc = real(S_corr); % korrigierter Amplitudenwert in VW-1 auf Phase 0 bezogen
+    b_abs = (Rc .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    
+    % High resolution data
+    for i = 1:number_of_lasers
+        s_highres = reshape(S_highres(1:n*floor(size(S_highres,2)./n)),n,floor(length(index)./n));
+        for j=1:size(s_highres,1)
+            s_corr(j,:) = s_highres(j,:) - W0(i,:);
+        end
+        r = real(s_corr);
         temp(i,:) = r(:)';
     end
     b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
@@ -155,7 +183,7 @@ elseif corr_method == 2
 else
     % Calculate b_abs in a phase correct manner
     Rc = sqrt((X-X_bg).^2 + (Y-Y_bg).^2); % in V
-    b_abs = ((Rc./P) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    b_abs = ((Rc) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
     
     % High resolution data
     temp1 = NaN.* R_highres;
