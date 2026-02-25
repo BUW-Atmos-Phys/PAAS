@@ -129,6 +129,7 @@ end
 
 if corr_method == 1
     % Calculate b_abs using R given by the LockIn
+    % Not phase correct 
     b_abs = ((R - R_bg) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
     
     % High resolution data
@@ -143,6 +144,7 @@ if corr_method == 1
 
 elseif corr_method == 2
     % Calculate b_abs using R calculated from X and Y
+    % Same as method 1 but R is calculated from x and y (sanity check)
     R_bg = sqrt((X_bg).^2 + (Y_bg).^2); % in V
     Rc = sqrt((X).^2 + (Y).^2); % in V
     b_abs = ((Rc - R_bg) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
@@ -180,7 +182,7 @@ elseif corr_method == 3
     end
     b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
 
-else
+else % corr_method == 4
     % Calculate b_abs in a phase correct manner
     Rc = sqrt((X-X_bg).^2 + (Y-Y_bg).^2); % in V
     b_abs = ((Rc) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
