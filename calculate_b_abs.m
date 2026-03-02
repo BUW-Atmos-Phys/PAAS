@@ -184,7 +184,8 @@ elseif corr_method == 3
 
 else % corr_method == 4
     % Calculate b_abs in a phase correct manner
-    Rc = sqrt((X-X_bg).^2 + (Y-Y_bg).^2); % in V
+    %Rc = sqrt((X-X_bg).^2 + (Y-Y_bg).^2); % in V
+    Rc = abs((X + 1i*Y) - (X_bg + 1i*Y_bg)); % in V
     b_abs = ((Rc) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
     
     % High resolution data
