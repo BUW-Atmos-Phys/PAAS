@@ -1,10 +1,14 @@
-function [b_abs,b_abs_highres,time,TimeStart,TimeEnd,time_highres,laser_wavelength] = calculate_b_abs(paas,valve_functionality,corr_method)
+function [b_abs,alpha,time,TimeStart,TimeEnd,time_highres,laser_wavelength] = ...
+    calculate_b_abs(paas,valve_functionality,corr_method)
 %calculate_b_abs Calculates absorption coefficients from imported PAAS data
 % Background subtraction included
+% X, Y and R are converted into m-1 using given f and cell constant
+%   -> gain changes are taken into account
 %   input                 
 %       paas:                   imported paas data
 %       valve_functionality:    status of relay 1 and 2 for BG and sample
 %       corr_method:            method to calculate b_abs
+%
 %   For KIT PAAS: valve_functionality = [-1 0; 0 -1];
 
 % Number of lasers and first laser
@@ -26,17 +30,25 @@ while (paas.Relay1(i) ~= valve_functionality(1,1) && ...
 end
 
 % Calculate f
-f = paas.Calibration_Gain(1) / paas.Lockin_Gain(1);
+f = paas.Calibration_Gain ./ paas.Lockin_Gain;
+
+% Cell constant
+C_cell = paas.Calbration_CellConstant;
 
 % Correct laser power
 paas.X = paas.X ./ paas.Power;
 paas.Y = paas.Y ./ paas.Power;
+paas.R = paas.R ./ paas.Power;
+
+% Apply cell constant
+paas.X = paas.X ./ C_cell .*f;
+paas.Y = paas.Y ./ C_cell .*f;
+paas.R = paas.R ./ C_cell .*f;
 
 % Calculate BG
 X_bg_temp = [];
 Y_bg_temp = [];
 R_bg_temp = [];
-P_bg_temp = [];
 for i = 1:number_of_lasers
     index_bg = find(paas.Relay1 == valve_functionality(1,1) & ...
         paas.Relay2 == valve_functionality(1,2) & paas.Laser==lasers(i));
@@ -46,22 +58,18 @@ for i = 1:number_of_lasers
     % Average BG measurements
     x_bg = paas.X(index_bg); x_bg = reshape(x_bg(1:n*floor(length(index_bg)./n)),n,floor(length(index_bg)./n));
     y_bg = paas.Y(index_bg); y_bg = reshape(y_bg(1:n*floor(length(index_bg)./n)),n,floor(length(index_bg)./n));
-    p_bg = paas.Power(index_bg); p_bg = reshape(p_bg(1:n*floor(length(index_bg)./n)),n,floor(length(index_bg)./n));
     r_bg = paas.R(index_bg); r_bg = reshape(r_bg(1:n*floor(length(index_bg)./n)),n,floor(length(index_bg)./n));
     X_bg_temp(i,:) = mean(x_bg,1,'omitnan');
     Y_bg_temp(i,:) = mean(y_bg,1,'omitnan');
-    P_bg_temp(i,:) = mean(p_bg,1,'omitnan');
-    R_bg_temp(i,:) = mean(r_bg,1,'omitnan');
+    R_bg_temp(i,:) = mean(r_bg,1,'omitnan'); % not phase correct
 end
 
 % Extract measurements and reshape
 X = [];
 Y = [];
-P = [];
 R = [];
 X_highres = [];
 Y_highres = [];
-P_highres = [];
 R_highres = [];
 laser_wavelength = [];
 for i = 1:number_of_lasers
@@ -72,17 +80,14 @@ for i = 1:number_of_lasers
     n = max(diff(idx));
     x = paas.X(index); 
     y = paas.Y(index); 
-    p = paas.Power(index); 
     r = paas.R(index); 
     % High resolution values
     X_highres(i,:) = x';
     Y_highres(i,:) = y';
-    P_highres(i,:) = p';
     R_highres(i,:) = r';
     % Make average values
     x = reshape(x(1:n*floor(length(index)./n)),n,floor(length(index)./n)); X(i,:) = mean(x,1,'omitnan');
     y = reshape(y(1:n*floor(length(index)./n)),n,floor(length(index)./n)); Y(i,:) = mean(y,1,'omitnan');
-    p = reshape(p(1:n*floor(length(index)./n)),n,floor(length(index)./n)); P(i,:) = mean(p,1,'omitnan');
     r = reshape(r(1:n*floor(length(index)./n)),n,floor(length(index)./n)); R(i,:) = mean(r,1,'omitnan');
     laser_wavelength(i) = paas.Laser_WaveLength(index(1));
 end
@@ -91,7 +96,7 @@ laser_wavelength = laser_wavelength';
 % Get time
 TimeStart = NaT(number_of_lasers,size(X,2));
 TimeEnd = NaT(number_of_lasers,size(X,2));
-time_highres = NaT(size(X_highres));
+time_highres = NaT(size(X_highres)); time_highres.TimeZone = paas.TimeStamp.TimeZone;
 for i = 1:number_of_lasers
     index = find(paas.Relay1 == valve_functionality(2,1) &...
         paas.Relay2 == valve_functionality(2,2) & paas.Laser==lasers(i));
@@ -114,7 +119,6 @@ time = mean([TimeStart; TimeEnd],1,'omitnan');
 X_bg = [];
 Y_bg = [];
 R_bg = [];
-P_bg = [];
 for i = 1:number_of_lasers
     a = X_bg_temp(i,:);
     X_bg(i,:) = arrayfun(@(k) mean(a(k:k+1)),1:length(a)-1); % the averaged bg over 2 samples
@@ -122,43 +126,40 @@ for i = 1:number_of_lasers
     Y_bg(i,:) = arrayfun(@(k) mean(a(k:k+1)),1:length(a)-1); % the averaged bg over 2 samples
     a = R_bg_temp(i,:);
     R_bg(i,:) = arrayfun(@(k) mean(a(k:k+1)),1:length(a)-1); % the averaged bg over 2 samples
-    a = P_bg_temp(i,:);
-    P_bg(i,:) = arrayfun(@(k) mean(a(k:k+1)),1:length(a)-1); % the averaged bg over 2 samples
 end
 
 
 if corr_method == 1
     % Calculate b_abs using R given by the LockIn
     % Not phase correct 
-    b_abs = ((R - R_bg) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    b_abs = R - R_bg; % in 1/m
     
     % High resolution data
-    temp = NaN.* R_highres;
+    b_abs_highres = NaN.* R_highres;
     for i = 1:number_of_lasers
         r = R_highres(i,:);
         r = reshape(r(1:n*floor(size(R_highres,2)./n)),n,floor(length(index)./n));
         r = r - R_bg(i,:); % remove average background
-        temp(i,:) = r(:)';
+        b_abs_highres(i,:) = r(:)';
     end
-    b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
-
+    
 elseif corr_method == 2
     % Calculate b_abs using R calculated from X and Y
     % Same as method 1 but R is calculated from x and y (sanity check)
     R_bg = sqrt((X_bg).^2 + (Y_bg).^2); % in V
     Rc = sqrt((X).^2 + (Y).^2); % in V
-    b_abs = ((Rc - R_bg) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    b_abs = Rc - R_bg; % in 1/m
     
     % High resolution data
     Rc_highres = sqrt((X_highres).^2 + (Y_highres).^2); % in V
+    b_abs_highres = NaN.* R_highres;
     for i = 1:number_of_lasers
         r = Rc_highres(i,:);
         r = reshape(r(1:n*floor(size(R_highres,2)./n)),n,floor(length(index)./n));
         r = r - R_bg(i,:); % remove average background
-        temp(i,:) = r(:)';
+        b_abs_highres(i,:) = r(:)';
     end
-    b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
-
+    
 elseif corr_method == 3
     % Calculate b_abs using projected R  
     S           = (X + 1i*Y);        % X,Y aktuelle Messung;
@@ -167,26 +168,26 @@ elseif corr_method == 3
 
     %  Background-corrected signal
     S_corr = S - W0;
-    phi_diff = angle(S) - angle(W0);
-    Rc = real(S_corr); % korrigierter Amplitudenwert in VW-1 auf Phase 0 bezogen
-    b_abs = (Rc .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    alpha = rad2deg(angle(S_corr));
+    b_abs = real(S_corr); % korrigierter Amplitudenwert in VW-1 auf Phase 0 bezogen
     
     % High resolution data
     for i = 1:number_of_lasers
         s_highres = reshape(S_highres(1:n*floor(size(S_highres,2)./n)),n,floor(length(index)./n));
+        b_abs_highres = NaN.* R_highres;
         for j=1:size(s_highres,1)
             s_corr(j,:) = s_highres(j,:) - W0(i,:);
         end
         r = real(s_corr);
-        temp(i,:) = r(:)';
+        b_abs_highres(i,:) = r(:)';
     end
-    b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
-
+    
 else % corr_method == 4
     % Calculate b_abs in a phase correct manner
     %Rc = sqrt((X-X_bg).^2 + (Y-Y_bg).^2); % in V
-    Rc = abs((X + 1i*Y) - (X_bg + 1i*Y_bg)); % in V
-    b_abs = ((Rc) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    S = (X + 1i*Y) - (X_bg + 1i*Y_bg); % complex signal
+    alpha = rad2deg(angle(S)); % phase angle of signal in degree
+    b_abs = abs(S); % in 1/m
     
     % High resolution data
     temp1 = NaN.* R_highres;
@@ -201,8 +202,7 @@ else % corr_method == 4
         y = y - Y_bg(i,:); % remove average background
         temp2(i,:) = y(:)';
     end
-    Rc_highres = sqrt(temp1.^2 + temp2.^2); % in V
-    b_abs_highres = ((Rc_highres./P_highres) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
+    b_abs_highres = sqrt(temp1.^2 + temp2.^2); % 1/m
 end
 
 

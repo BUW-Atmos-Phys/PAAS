@@ -1,4 +1,4 @@
-function [b_abs,b_abs_highres,time,TimeStart,TimeEnd,time_highres,laser_wavelength] = calculate_b_abs(paas,valve_functionality,corr_method)
+function [b_abs,b_abs_highres,time,TimeStart,TimeEnd,time_highres,laser_wavelength] = calculate_b_abs_orig(paas,valve_functionality,corr_method)
 %calculate_b_abs Calculates absorption coefficients from imported PAAS data
 % Background subtraction included
 %   input                 
@@ -91,7 +91,7 @@ laser_wavelength = laser_wavelength';
 % Get time
 TimeStart = NaT(number_of_lasers,size(X,2));
 TimeEnd = NaT(number_of_lasers,size(X,2));
-time_highres = NaT(size(X_highres));
+time_highres = NaT(size(X_highres)); time_highres.TimeZone = paas.TimeStamp.TimeZone;
 for i = 1:number_of_lasers
     index = find(paas.Relay1 == valve_functionality(2,1) &...
         paas.Relay2 == valve_functionality(2,2) & paas.Laser==lasers(i));
@@ -182,9 +182,10 @@ elseif corr_method == 3
     end
     b_abs_highres = (temp .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
 
-else
+else % corr_method == 4
     % Calculate b_abs in a phase correct manner
-    Rc = sqrt((X-X_bg).^2 + (Y-Y_bg).^2); % in V
+    %Rc = sqrt((X-X_bg).^2 + (Y-Y_bg).^2); % in V
+    Rc = abs((X + 1i*Y) - (X_bg + 1i*Y_bg)); % in V
     b_abs = ((Rc) .* f) ./ (paas.Calbration_CellConstant(1)); % in 1/m
     
     % High resolution data

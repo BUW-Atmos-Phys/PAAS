@@ -3,8 +3,10 @@ function [paas] = import_PAAS(filename, n_laser, BG, show_plot, t_start, t_end)
 
 
 %% Read data
+warning('off','MATLAB:table:ModifiedAndSavedVarnames')
 opts = detectImportOptions(filename);
 opts = setvartype(opts,{'Babs'},'double');
+opts.VariableNamingRule = 'modify';
 paas = readtable(filename,opts);
 
 %% Prepare data

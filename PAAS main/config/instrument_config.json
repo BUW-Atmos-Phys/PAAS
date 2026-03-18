@@ -1,0 +1,124 @@
+{
+  "PAAS-4L-02-005": {
+    "Hyytiala": {
+      "valve_functionality": [[-1, 0], [0, -1]],
+      "laser_power_corr": [1, 1, 1, 1],
+      "laser_power_corr_period": ["2021-12-21 00:00:00", "2025-12-31 23:59:59"],
+      "calibration_corr": 1.0545744681,
+      "calibration_corr_period": ["2021-12-21 00:00:00", "2024-12-31 23:59:59"],
+      "interlock_failure_period": [
+        ["2025-07-30 07:00:00", "2025-08-12 18:00:00"]
+      ],
+      "interlock_failure_laser": 3,
+      "babs_range": [-5e-7, 1e-5],
+      "n_laser": 4,
+      "BG": 0,
+      "time_correction": {
+        "input_timezone": "UTC+2",
+        "output_timezone": "UTC",
+        "apply_timezone_conversion": false,
+        "offset_seconds": 0,
+        "drift_seconds_per_day": 0,
+        "manual_time_shifts": [
+          {
+            "start_index": 12047,
+            "end_index": 249534,
+            "step": 1,
+            "shift_seconds": -3600
+          },
+          {
+            "start_index": 249535,
+            "end_index": 249630,
+            "step": 2,
+            "shift_seconds": -3600
+          }
+        ]
+      }
+      },
+
+    "Hyytiala_Phase2": {
+      "valve_functionality": [[-1, 0], [0, -1]],
+      "laser_power_corr": [1, 1, 1, 1],
+      "laser_power_corr_period": ["2021-12-21 00:00:00", "2025-12-31 23:59:59"],
+      "calibration_corr": 1.0,
+      "calibration_corr_period": ["2024-12-31 00:00:00", "2025-12-31 23:59:59"],
+      "interlock_failure_period": [
+        ["2025-07-30 07:00:00", "2025-08-12 18:00:00"]
+      ],
+      "interlock_failure_laser": 3,
+      "babs_range": [-5e-7, 5e-6],
+      "n_laser": 4,
+      "BG": 0,
+      "time_correction": {
+        "input_timezone": "UTC+2",
+        "output_timezone": "UTC",
+        "apply_timezone_conversion": false,
+        "offset_seconds": 0,
+        "drift_seconds_per_day": 0,
+        "manual_time_shifts": [
+          {
+            "start_index": 1,
+            "end_index": 77582,
+            "step": 1,
+            "shift_seconds": -3600
+          },
+          {
+            "start_index": 77583,
+            "end_index": 77677,
+            "step": 2,
+            "shift_seconds": -3600
+          }
+        ]
+      }
+      },
+
+    "Pallas": {
+      "valve_functionality": [[-1, 0], [0, -1]],
+      "laser_power_corr": [1.0, 1.0, 0.906, 1.0],
+      "laser_power_corr_period": ["2021-12-21 00:00:00", "2023-12-21 23:59:59"],
+      "calibration_corr": 0.8565402405,
+      "calibration_corr_period": ["2021-12-21 00:00:00", "2023-12-21 23:59:59"],
+      "interlock_failure_period": [
+        ["1904-01-01 00:00:00", "1904-01-01 23:59:59"],
+        ["1904-01-01 00:00:00", "1904-01-01 23:59:59"]
+      ],
+      "interlock_failure_laser": [3, 3],
+      "phase_angle_soll": 225,
+      "phase_angle_soll_period": ["2021-12-21 00:00:00", "2023-12-21 23:59:59"], 
+      "n_laser": 4,
+      "BG": 0,
+      "time_correction": {
+        "input_timezone": "UTC+2",
+        "output_timezone": "UTC",
+        "apply_timezone_conversion": false,
+        "offset_seconds": 0,
+        "drift_seconds_per_day": 0,
+        "manual_time_shifts": [
+          {
+            "start_index": 109951,
+            "end_index": 356965,
+            "step": 1,
+            "shift_seconds": -3600
+          },
+          {
+            "start_index": 356966,
+            "end_index": 357060,
+            "step": 2,
+            "shift_seconds": -3600
+          }
+        ]
+      }
+      }
+  },
+
+  "PAAS-3L-01-002": {
+    "Ala-Honkajoki": {
+      "valve_functionality": [[-1, 0], [0, -1]],
+      "laser_power_corr": [0.8333333333, 1.0, 1.435, 1.435],
+      "laser_power_corr_period": ["2024-02-19 00:00:00", "2024-12-31 23:59:59"],
+      "calibration_corr": 0.7984031936,
+      "calibration_corr_period": ["2021-12-21 00:00:00", "2024-12-21 23:59:59"],
+      "babs_range": [-1e-7, 3e-5]
+    }
+  }
+}
