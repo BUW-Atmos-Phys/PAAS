@@ -154,6 +154,8 @@ def plot_bg_absolute(bg_405, bg_473, bg_515, bg_660,
                     bbox_inches='tight')
 
     plt.show()
+    filepath = os.path.join(savefolder, "Absolute_BG.png")
+    plt.savefig(filepath, dpi=500, bbox_inches='tight')
     
     
 
@@ -191,7 +193,7 @@ def plot_bg(bg_405, bg_473, bg_515, bg_660,
         )
 
         ax_ts.set_xlim(analysis_period)
-        ax_ts.set_ylim([-1.99, 1.99])
+        ax_ts.set_ylim([-2.99, 2.99])
         ax_ts.set_ylabel(r'b$_{abs}$ [1/Mm]')
         ax_ts.grid(True)
         ax_ts.tick_params(labelsize=12, width=1.5)
@@ -234,7 +236,7 @@ def plot_bg(bg_405, bg_473, bg_515, bg_660,
         
         ax_hist.plot(pdf, y, linewidth=2.5, color=color)
         
-        ax_hist.set_ylim([-1.99, 1.99])
+        ax_hist.set_ylim([-2.99, 2.99])
         ax_hist.set_xlim([0, 3.5])
         
         ax_hist.grid(True)

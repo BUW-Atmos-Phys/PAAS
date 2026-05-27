@@ -1,7 +1,30 @@
 function [BG, stats] = compute_bg_statistics(paas, valve_functionality, time_av)
 
-wavelength = unique(paas.Laser_WaveLength);
+wavelength = unique(paas.Laser);
 n_wl = length(wavelength);
+
+% Dataset should start with a background measurement
+i = 1;
+while (paas.Relay1(i) ~= valve_functionality(1,1))
+    paas(i,:) = [];
+end
+
+% Dataset should end with a full background cycle
+i = size(paas,1);
+while i >= n_wl
+    % Check last N entries
+    idx = (i-n_wl+1):i;
+    is_bg = (paas.Relay1(idx) == valve_functionality(1,1)) & ...
+            (paas.Relay2(idx) == valve_functionality(1,2));
+    % Check also that all lasers are present
+    lasers_block = paas.Laser(idx);
+    if all(is_bg) && numel(unique(lasers_block)) == n_wl
+        break
+    end
+    % Otherwise remove last entry and continue
+    paas(i,:) = [];
+    i = i - 1;
+end
 
 BG = struct();
 
@@ -11,7 +34,7 @@ for i = 1:n_wl
 
     idx = paas.Relay1 == valve_functionality(1,1) & ...
           paas.Relay2 == valve_functionality(1,2) & ...
-          paas.Laser_WaveLength == wl;
+          paas.Laser == wl;
 
     time = paas.TimeStamp(idx);
 

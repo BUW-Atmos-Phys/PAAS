@@ -1,9 +1,9 @@
 function plot_timeseries_histogram(TT_statistics, ...
+                                     stats, ...
                                      laser_wavelength, ...
                                      time_av, ...
-                                     lod, ...
                                      time_range)
-% Publication-ready time series with right-side histograms
+% Time series with right-side histograms
 % Width ratio TimeSeries:Histogram = 3:1
 % Units: Mm^-1
 
@@ -52,9 +52,10 @@ function plot_timeseries_histogram(TT_statistics, ...
 
         wl = num2str(laser_wavelength(i));
         varname = ['mean_' wl];
-
-        b_plot = TT_statistics.(varname) * conversion;
+        
+        b_plot = TT_statistics.(varname) .* conversion;
         time = TT_statistics.Time;
+        sigma = stats.X.rmse(i)*1e6;
 
         bottom = 1 - top_margin - i*row_height - (i-1)*vertical_gap;
 
@@ -69,8 +70,8 @@ function plot_timeseries_histogram(TT_statistics, ...
             'LineWidth',1.5, ...
             'Color',laser_color(i,:));
 
-        yline(lod,'--k','LineWidth',1.2,'HandleVisibility','off');
-        yline(-lod,'--k','LineWidth',1.2,'HandleVisibility','off');
+        % LOD
+        yline(2.*sigma,'--k','LineWidth',3);
 
         grid on
         box on

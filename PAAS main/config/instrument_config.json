@@ -2,14 +2,16 @@
   "PAAS-4L-02-005": {
     "Hyytiala": {
       "valve_functionality": [[-1, 0], [0, -1]],
-      "laser_power_corr": [1, 1, 1, 1],
-      "laser_power_corr_period": ["2021-12-21 00:00:00", "2025-12-31 23:59:59"],
-      "calibration_corr": 1.0545744681,
-      "calibration_corr_period": ["2021-12-21 00:00:00", "2024-12-31 23:59:59"],
+      "c_cell_soll": 75484,
+      "calibration_gain": 300,
+      "c_cell_soll_period": ["2021-12-21 00:00:00", "2026-12-31 23:59:59"],
+      "phase_angle_soll": 210,
+      "phase_angle_soll_period": ["2021-12-21 00:00:00", "2025-08-12 23:59:59"], 
+      "phase_angle_soll_lasers": [3],
       "interlock_failure_period": [
         ["2025-07-30 07:00:00", "2025-08-12 18:00:00"]
       ],
-      "interlock_failure_laser": 3,
+      "interlock_failure_laser": 2,
       "babs_range": [-5e-7, 1e-5],
       "n_laser": 4,
       "BG": 0,
@@ -38,14 +40,37 @@
 
     "Hyytiala_Phase2": {
       "valve_functionality": [[-1, 0], [0, -1]],
-      "laser_power_corr": [1, 1, 1, 1],
-      "laser_power_corr_period": ["2021-12-21 00:00:00", "2025-12-31 23:59:59"],
-      "calibration_corr": 1.0,
-      "calibration_corr_period": ["2024-12-31 00:00:00", "2025-12-31 23:59:59"],
-      "interlock_failure_period": [
-        ["2025-07-30 07:00:00", "2025-08-12 18:00:00"]
+      "c_cell_soll": 75484,
+      "calibration_gain": 300,
+      "c_cell_soll_period": ["2024-12-21 00:00:00", "2026-12-31 23:59:59"],
+      "Powermeter_Attenuation_soll_wl": {
+        "405": 6.6191,
+        "473": 8.4619,
+        "515": 8.9779,
+        "520": 8.5712,
+        "660": 7.7049,
+        "785": 5.8358
+      },
+      "Powermeter_Attenuation_period": [
+        "2024-02-01 00:00:00",
+        "2027-02-05 23:59:59"
       ],
-      "interlock_failure_laser": 3,
+      "interlock_failure_period": [
+        ["2025-07-30 07:00:00", "2025-08-12 18:00:00"],
+        ["2025-11-18 21:04:45", "2025-11-18 22:00:41"],
+        ["2025-12-03 10:14:00", "2025-12-04 18:21:41"],
+        ["2025-12-21 03:28:00", "2025-12-27 13:28:00"],
+        ["2026-02-09 23:23:00", "2026-02-10 16:40:00"]
+      ],
+      "interlock_failure_laser": [
+        3,
+        1,
+        1,
+        1,
+        1],
+      "phase_angle_soll": 225,
+      "phase_angle_soll_period": ["2024-12-21 00:00:00", "2026-12-21 23:59:59"], 
+      "phase_angle_soll_lasers": [0, 1, 2, 3],
       "babs_range": [-5e-7, 5e-6],
       "n_laser": 4,
       "BG": 0,
@@ -67,6 +92,12 @@
             "end_index": 77677,
             "step": 2,
             "shift_seconds": -3600
+          },
+          {
+            "start_index": 252207,
+            "end_index": 314424,
+            "step": 1,
+            "shift_seconds": -3600
           }
         ]
       }
@@ -76,8 +107,9 @@
       "valve_functionality": [[-1, 0], [0, -1]],
       "laser_power_corr": [1.0, 1.0, 0.906, 1.0],
       "laser_power_corr_period": ["2021-12-21 00:00:00", "2023-12-21 23:59:59"],
-      "calibration_corr": 0.8565402405,
-      "calibration_corr_period": ["2021-12-21 00:00:00", "2023-12-21 23:59:59"],
+      "c_cell_soll": 75484,
+      "calibration_gain": 300,
+      "c_cell_soll_period": ["2021-12-21 00:00:00", "2023-12-21 23:59:59"],
       "interlock_failure_period": [
         ["1904-01-01 00:00:00", "1904-01-01 23:59:59"],
         ["1904-01-01 00:00:00", "1904-01-01 23:59:59"]
@@ -85,6 +117,7 @@
       "interlock_failure_laser": [3, 3],
       "phase_angle_soll": 225,
       "phase_angle_soll_period": ["2021-12-21 00:00:00", "2023-12-21 23:59:59"], 
+      "phase_angle_soll_lasers": [0, 1, 2, 3],
       "n_laser": 4,
       "BG": 0,
       "time_correction": {

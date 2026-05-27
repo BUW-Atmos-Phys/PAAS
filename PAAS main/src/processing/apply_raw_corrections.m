@@ -1,6 +1,8 @@
 function paas = apply_raw_corrections(paas, cfg)
 %APPLY_CORRECTIONS Apply campaign-specific corrections to raw data:
 %   - phase angle rotation
+%   - correction of cell constant
+%   - mark interlock failure periods as NaN
 
     arguments
         paas table
@@ -10,24 +12,168 @@ function paas = apply_raw_corrections(paas, cfg)
     % -------------------------------------------------------------
     % Phase angle correction
     % -------------------------------------------------------------
-    if isfield(cfg,"phase_angle_soll") && isfield(cfg,"phase_angle_soll_period")
+    if isfield(cfg,"phase_angle_soll") && ...
+       isfield(cfg,"phase_angle_soll_period") && ...
+       isfield(cfg,"phase_angle_soll_lasers")
+    
+        % --- Time selection ---
+        period = datetime(cfg.phase_angle_soll_period, ...
+                          "TimeZone", paas.TimeStamp.TimeZone);
+    
+        idx_time = paas.TimeStamp >= period(1) & ...
+                   paas.TimeStamp <  period(2);
+    
+        % --- Laser selection ---
+        idx_laser = ismember(paas.Laser, cfg.phase_angle_soll_lasers);
+    
+        % --- Combined mask ---
+        idx = idx_time & idx_laser;
+    
+        if any(idx)
+            % Phase correction only for selected subset
+            dphi = deg2rad(cfg.phase_angle_soll - paas.Lockin_Phasing(idx));
+    
+            X_new = paas.X(idx).*cos(dphi) - paas.Y(idx).*sin(dphi);
+            Y_new = paas.X(idx).*sin(dphi) + paas.Y(idx).*cos(dphi);
+    
+            paas.X(idx) = X_new;
+            paas.Y(idx) = Y_new;
+    
+            fprintf(['Phase angle set to %.1f° for lasers [%s] ' ...
+                     'in period %s to %s (%d points).\n\n'], ...
+                cfg.phase_angle_soll, ...
+                num2str(cfg.phase_angle_soll_lasers), ...
+                datestr(period(1)), ...
+                datestr(period(2)), ...
+                sum(idx));
+        end
+    end
 
-        period = datetime(cfg.laser_power_corr_period, ...
+
+    % -------------------------------------------------------------
+    % Cell constant correction
+    % -------------------------------------------------------------
+    if isfield(cfg,"c_cell_soll") && isfield(cfg,"c_cell_soll_period")
+
+        period = datetime(cfg.c_cell_soll_period, ...
+                          "TimeZone", paas.TimeStamp.TimeZone);
+    
+        idx = paas.TimeStamp >= period(1) & paas.TimeStamp < period(2);
+    
+        if any(idx)
+            
+            Calbration_CellConstant_new = cfg.c_cell_soll;
+            Calibration_Gain_new        = cfg.calibration_gain;
+    
+            paas.Calbration_CellConstant(idx) = Calbration_CellConstant_new;
+            paas.Calibration_Gain(idx)        = Calibration_Gain_new;
+    
+            fprintf(['Cell constant set to %.4f and calibration gain to %.1f ' ...
+                     'for period %s to %s (%d timestamps).\n\n'], ...
+                Calbration_CellConstant_new, ...
+                Calibration_Gain_new, ...
+                datestr(period(1)), ...
+                datestr(period(2)), ...
+                sum(idx));
+        end
+    end
+
+    % -------------------------------------------------------------
+    % Powermeter attenuation correction (wavelength-based)
+    % -------------------------------------------------------------
+    if isfield(cfg,"Powermeter_Attenuation_soll_wl") && ...
+       isfield(cfg,"Powermeter_Attenuation_period")
+    
+        % --- Time selection ---
+        period = datetime(cfg.Powermeter_Attenuation_period, ...
+                          "TimeZone", paas.TimeStamp.TimeZone);
+    
+        idx_time = paas.TimeStamp >= period(1) & ...
+                   paas.TimeStamp <  period(2);
+    
+        if any(idx_time)
+    
+            wl_map = cfg.Powermeter_Attenuation_soll_wl;
+    
+            % Initialize target attenuation
+            A_soll = nan(sum(idx_time),1);
+    
+            wl_data = paas.Laser_WaveLength(idx_time);
+    
+            % --- tolerance for float comparison (important!)
+            tol = 1;  % nm
+    
+            wl_fields = fieldnames(wl_map);
+    
+            for i = 1:numel(wl_fields)
+    
+                wl_key = wl_fields{i};
+                wl_target = str2double(regexprep(wl_key, '[^0-9.]', ''));
+    
+                mask = abs(wl_data - wl_target) < tol;
+    
+                if any(mask)
+                    A_soll(mask) = wl_map.(wl_key);
+                end
+            end
+    
+            % --- current attenuation ---
+            A_meas = paas.Powermeter_Attenuation(idx_time);
+
+            % --- convert to linear ---
+            A_meas_lin = 10.^(A_meas./10);
+            A_soll_lin = 10.^(A_soll./10);
+    
+            % --- scaling factor ---
+            scale = A_soll_lin ./ A_meas_lin;
+    
+            % --- apply correction ---
+            paas.Power(idx_time) = paas.Power(idx_time) .* scale;
+    
+            fprintf(['Powermeter attenuation corrected (wavelength-based) ' ...
+                     'for period %s to %s (%d points).\n\n'], ...
+                datestr(period(1)), ...
+                datestr(period(2)), ...
+                sum(idx_time));
+    
+        end
+    end
+
+    % -------------------------------------------------------------
+    % Interlock failure
+    %   - Sets paas.Power = NaN for affected laser + time periods
+    % -------------------------------------------------------------
+    if ~isfield(cfg,"interlock_failure_period") || ...
+       ~isfield(cfg,"interlock_failure_laser")
+        return
+    end
+
+    periods = cfg.interlock_failure_period;
+    lasers  = cfg.interlock_failure_laser;
+
+    for i = 1:size(periods,1)
+
+        % --- Time selection ---
+        period = datetime(periods{i,:}, ...
                           "TimeZone", paas.TimeStamp.TimeZone);
 
-        idx = paas.TimeStamp >= period(1) & paas.TimeStamp < period(2);
+        idx_time = paas.TimeStamp >= period(1) & ...
+                   paas.TimeStamp <= period(2);
+
+        % --- Laser selection ---
+        laser_id = lasers(i);
+        idx_laser = paas.Laser == laser_id;
+
+        % --- Combined mask ---
+        idx = idx_time & idx_laser;
 
         if any(idx)
-            dphi = deg2rad(cfg.phase_angle_soll(:) - paas.Lockin_Phasing);
+            % Apply masking
+            paas.Power(idx) = NaN;
 
-            X_new =  paas.X.*cos(dphi) - paas.Y.*sin(dphi);
-            Y_new =  paas.X.*sin(dphi) + paas.Y.*cos(dphi);
-
-            paas.X = X_new;
-            paas.Y = Y_new;
-
-            fprintf("Phase angle was set to %.1f° for period %s to %s (%d timestamps).\n", ...
-                cfg.phase_angle_soll, ...
+            fprintf(['Interlock filter: Laser %d masked for period %s to %s ' ...
+                     '(%d points).\n'], ...
+                laser_id, ...
                 datestr(period(1)), ...
                 datestr(period(2)), ...
                 sum(idx));

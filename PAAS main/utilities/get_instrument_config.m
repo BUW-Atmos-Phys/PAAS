@@ -14,8 +14,8 @@ local = L.(inst).(camp);
 
 % --- Build paths
 cfg.datafolder   = fullfile(local.data_root, local.data_subfolder);
-cfg.outputfolder_plots = fullfile(local.output_root_plots, inst, camp);
-cfg.outputfolder_data = fullfile(local.output_root_data, inst, camp);
+cfg.outputfolder_plots = fullfile(local.output_root_plots);
+cfg.outputfolder_data = fullfile(local.output_root_data);
 
 end
 

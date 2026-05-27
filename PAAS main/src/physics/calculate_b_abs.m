@@ -21,13 +21,26 @@ while (paas.Relay1(i) ~= valve_functionality(1,1))
     paas(i,:) = [];
 end
 
-% Dataset should end with a background measurement
+% Dataset should end with a full background cycle
 i = size(paas,1);
-while (paas.Relay1(i) ~= valve_functionality(1,1) && ...
-        paas.Relay2(i) ~= valve_functionality(1,2))
+while i >= number_of_lasers
+    % Check last N entries
+    idx = (i-number_of_lasers+1):i;
+    is_bg = (paas.Relay1(idx) == valve_functionality(1,1)) & ...
+            (paas.Relay2(idx) == valve_functionality(1,2));
+    % Check also that all lasers are present
+    lasers_block = paas.Laser(idx);
+    if all(is_bg) && numel(unique(lasers_block)) == number_of_lasers
+        break
+    end
+    % Otherwise remove last entry and continue
     paas(i,:) = [];
-    i = i-1;
+    i = i - 1;
 end
+
+% Remove instrument start segments until valid BG
+% (Both Relays 0) -> THIS DOES NOT WORK FOR PALLAS
+%paas = remove_start_segments(paas, valve_functionality);
 
 % Calculate f
 f = paas.Calibration_Gain ./ paas.Lockin_Gain;
@@ -62,7 +75,15 @@ for i = 1:number_of_lasers
     X_bg_temp(i,:) = mean(x_bg,1,'omitnan');
     Y_bg_temp(i,:) = mean(y_bg,1,'omitnan');
     R_bg_temp(i,:) = mean(r_bg,1,'omitnan'); % not phase correct
+    % Average time
+    time_start_bg = paas.TimeStamp_start(index_bg); time_start_bg = reshape(time_start_bg(1:n*floor(length(index_bg)./n)),n,floor(length(index_bg)./n));
+    time_end_bg = paas.TimeStamp_end(index_bg); time_end_bg = reshape(time_end_bg(1:n*floor(length(index_bg)./n)),n,floor(length(index_bg)./n));
+    TimeStart(i,:) = time_start_bg(1,:);
+    TimeEnd(i,:) = time_end_bg(end,:);
 end
+TimeStart = datenum(TimeStart); TimeStart = min(TimeStart); TimeStart = datetime(TimeStart,'ConvertFrom','datenum');
+TimeEnd = datenum(TimeEnd); TimeEnd = max(TimeEnd); TimeEnd = datetime(TimeEnd,'ConvertFrom','datenum');
+time_bg = mean([TimeStart; TimeEnd],1,'omitnan');
 
 % Extract measurements and reshape
 X = [];
@@ -93,7 +114,7 @@ for i = 1:number_of_lasers
 end
 laser_wavelength = laser_wavelength';
 
-% Get time
+% Get time for measurement cycle
 TimeStart = NaT(number_of_lasers,size(X,2));
 TimeEnd = NaT(number_of_lasers,size(X,2));
 time_highres = NaT(size(X_highres)); time_highres.TimeZone = paas.TimeStamp.TimeZone;
@@ -128,6 +149,20 @@ for i = 1:number_of_lasers
     R_bg(i,:) = arrayfun(@(k) mean(a(k:k+1)),1:length(a)-1); % the averaged bg over 2 samples
 end
 
+% Check that measurement is always surrounded by BG
+% valid = false(size(time));
+% for k = 1:length(time)
+%     if k <= length(time_bg)-1
+%         if ~isnat(time_bg(k)) && ~isnat(time_bg(k+1))
+%             valid(k) = true;
+%         end
+%     end
+% end
+% % Apply mask
+% R(:,~valid) = [];
+% X(:,~valid) = [];
+% Y(:,~valid) = [];
+% time(:,~valid) = [];
 
 if corr_method == 1
     % Calculate b_abs using R given by the LockIn
@@ -174,7 +209,7 @@ elseif corr_method == 3
     % High resolution data
     for i = 1:number_of_lasers
         s_highres = reshape(S_highres(1:n*floor(size(S_highres,2)./n)),n,floor(length(index)./n));
-        b_abs_highres = NaN.* R_highres;
+        % s_highres(:,~valid) = [];
         for j=1:size(s_highres,1)
             s_corr(j,:) = s_highres(j,:) - W0(i,:);
         end

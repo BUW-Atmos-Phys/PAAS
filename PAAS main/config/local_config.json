@@ -3,7 +3,8 @@
     "Hyytiala": {
       "data_root": "/Users/emma/Documents/Field campaigns/Hyytiala/Data/PAAS",
       "data_subfolder": "raw data weekly",
-      "output_root": "/Users/emma/Documents/Field campaigns/Hyytiala/Data/PAAS/plots"
+      "output_root_plots": "/Users/emma/Documents/Field campaigns/Hyytiala/Data/PAAS/plots",
+      "output_root_data": "/Users/emma/Documents/Field campaigns/Hyytiala/Data/PAAS"
     },
 
     "Hyytiala_Phase2": {

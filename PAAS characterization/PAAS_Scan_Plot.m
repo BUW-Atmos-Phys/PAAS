@@ -8,7 +8,7 @@ datafolder = ['/Users/emma/Documents/Instruments/PAAS/PAAS-4L-005/Characterisati
 outputfolder = ['/Users/emma/Documents/Instruments/PAAS/PAAS-4L-005/Characterisation/' ...
     'Frequency scans/plots'];
 
-filename = 'paas_005_scan_260310.csv';
+filename = 'paas_005_scan_260522.csv';
 
 split_and_plot_frequency_scans(datafolder, filename, outputfolder)
 
@@ -112,8 +112,8 @@ for s = 1:n_scans
     width = f0/Q;
 
     legend([p1 p2],...
-        {'Measurement',...
-         sprintf('Lorentz fit  f_0 = %.1f Hz,  FWHM = %.1f Hz,  Q = %.1f',f0,width,Q)},...
+        {sprintf('Measurement (LockIn phase %.0f)',lockin_phase(1)),...
+         sprintf('Lorentz fit  f_0 = %.0f Hz,  FWHM = %.0f Hz,  Q = %.0f',f0,width,Q)},...
         'Location','northoutside','FontSize',14)
 
     %% ------------------------------------------------

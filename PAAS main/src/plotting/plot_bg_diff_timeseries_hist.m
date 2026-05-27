@@ -79,7 +79,7 @@ for i = 1:n_wl
 end
 
 set(gcf,'paperpositionmode','auto')
-
-%print(plotfolder + "BGDiff_"+component+"_analysis_"+string(time_av)+"h.png",'-dpng')
+filename = fullfile(plotfolder,['BGvariation_',num2str(time_av),'h_averaging.png']); 
+exportgraphics(graph, filename)
 
 end

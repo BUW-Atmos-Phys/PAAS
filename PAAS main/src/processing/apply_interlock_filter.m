@@ -28,7 +28,7 @@ function b_abs = apply_interlock_filter(b_abs, time, cfg)
             if laser_id <= size(b_abs,1)
                 b_abs(laser_id, idx) = NaN;
 
-                fprintf("Interlock filter: Laser %d masked for %d timestamps.\n", ...
+                fprintf("Interlock filter: Laser %d masked for %d timestamps.\n\n", ...
                         laser_id, sum(idx));
             end
         end
